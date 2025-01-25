@@ -198,14 +198,10 @@ def applyAct(actId, x):
   return value
 
 
-def act(weights, aVec, nInput, nOutput, inPattern):
+def act(weights, aVec, nInput, nOutput, inPattern): # fixed order assumption
   """Returns FFANN output given a single input pattern
-  If the variable weights is a vector it is turned into a square weight matrix.
+  The network assumes nodes are ordered as: input, bias, hidden, output
   
-  Allows the network to return the result of several samples at once if given a matrix instead of a vector of inputs:
-      Dim 0 : individual samples
-      Dim 1 : dimensionality of pattern (# of inputs)
-
   Args:
     weights   - (np_array) - ordered weight matrix or vector
                 [N X N] or [N**2]
@@ -236,15 +232,16 @@ def act(weights, aVec, nInput, nOutput, inPattern):
       nSamples = 1
 
   # Run input pattern through ANN    
-  nodeAct  = jnp.zeros((nSamples,nNodes)) # Store activation of each node
-  nodeAct = nodeAct.at[:,0].set(1) # Bias activation
-  nodeAct = nodeAct.at[:,1:nInput+1].set(inPattern) # Prepare input node activation
+  nodeAct = jnp.zeros((nSamples, nNodes))  # Store activation of each node
+  nodeAct = nodeAct.at[:, :nInput].set(inPattern)  # Set input node activations first
+  nodeAct = nodeAct.at[:, nInput].set(1)  # Set bias activation after inputs
 
   # Propagate signal through hidden to output nodes
-  for iNode in range(nInput+1,nNodes):
-      rawAct = jnp.dot(nodeAct, wMat[:,iNode]).squeeze()
-      nodeAct = nodeAct.at[:,iNode].set(applyAct(aVec[iNode], rawAct)) # Looping sparse dot-product to compute each node's activation
-  output = nodeAct[:,-nOutput:]   
+  for iNode in range(nInput + 1, nNodes):
+      rawAct = jnp.dot(nodeAct, wMat[:, iNode]).squeeze()
+      nodeAct = nodeAct.at[:, iNode].set(applyAct(aVec[iNode], rawAct))
+  
+  output = nodeAct[:, -nOutput:]   
   return output
 
 
