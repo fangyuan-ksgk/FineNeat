@@ -168,7 +168,7 @@ def act(weights, aVec, nInput, nOutput, inPattern):
   # Run input pattern through ANN    
   nodeAct  = np.zeros((nSamples,nNodes)) # Store activation of each node
   nodeAct[:,:nInput] = inPattern # Input assignment 
-  nodeAct[:,nInput] = 1 # Bias assignment
+  nodeAct[:,nInput] = 1 # Bias assignment 
 
   # Propagate signal through hidden to output nodes
   for iNode in range(nInput+1,nNodes):
