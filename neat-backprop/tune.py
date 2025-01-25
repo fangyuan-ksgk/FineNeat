@@ -25,7 +25,6 @@ def step(wMat, aVec, nInput, nOutput, batch_input, batch_output, learning_rate=0
     return wMat_updated, loss_value
 
 
-
 def train_params(wMat, aVec, nInput, nOutput, train_data, generator: DataGenerator, learning_rate: float = 0.01, n_epochs: int = 400, interval: int = 10):
     for i in range(n_epochs): 
         batch = generator.generate_batch(train_data)
