@@ -120,6 +120,55 @@ class Neat():
     
     self.pop = pop
     self.innov = innov
+    
+  def initPop_with_shapes(self, shapes):
+    """Initialize population with a list of random individuals
+    """
+    p = self.p 
+    pop = []
+    for i in range(p['popSize']):
+        newInd = Ind.from_shapes(shapes)
+        newInd.birth = 0 
+        pop.append(newInd)
+        
+    for ind in pop:
+        ind.express()
+        
+    nConn = pop[0].conn.shape[1]
+    # - Create Innovation Record -
+    innov = np.zeros([5,nConn])
+    innov[0:3,:] = pop[0].conn[0:3,:]
+    innov[3,:] = -1 # New Node ID: -1 indicates non-new node
+    innov[4,:] = 0  # Generation evolved
+    
+    self.pop = pop
+    self.innov = innov
+  
+  def initPop_from_ind(self, ind):
+    """Initialize population with a list of random individuals
+    """
+    p = self.p 
+    conn, node = ind.conn, ind.node
+    nConn = conn.shape[1]
+    pop = []
+    for i in range(p['popSize']):
+        newInd = Ind(conn, node)
+        newInd.conn[3,:] = (2*(np.random.rand(1,nConn)-0.5))*p['ann_absWCap'] # [-w_cap, w_cap] uniform random weight
+        newInd.conn[4,:] = np.random.rand(1,nConn) < p['prob_initEnable'] # enable or disable
+        newInd.birth = 0
+        pop.append(copy.deepcopy(newInd))
+        
+    for ind in pop:
+        ind.express()
+        
+     # - Create Innovation Record -
+    innov = np.zeros([5,nConn])
+    innov[0:3,:] = pop[0].conn[0:3,:]
+    innov[3,:] = -1 # New Node ID: -1 indicates non-new node
+    innov[4,:] = 0  # Generation evolved
+    
+    self.pop = pop
+    self.innov = innov
 
   def rankPop(self):
     """Rank population according to Pareto dominance.

@@ -4,6 +4,7 @@ from fineNeat.sneat_jax.ann import act
 from jax import value_and_grad
 from jax.nn import softmax
 from datagen import DataGenerator 
+from fineNeat import update_conn
 
 def one_hot_encode(batch_output):
     encoder = jnp.zeros((batch_output.shape[0], 2))
@@ -24,8 +25,7 @@ def step(wMat, aVec, nInput, nOutput, batch_input, batch_output, learning_rate=0
     wMat_updated = wMat - learning_rate * grads
     return wMat_updated, loss_value
 
-
-def train_params(wMat, aVec, nInput, nOutput, train_data, generator: DataGenerator, learning_rate: float = 0.01, n_epochs: int = 400, interval: int = 10):
+def train_params(wMat, aVec, nInput, nOutput, train_data, generator: DataGenerator, learning_rate: float = 0.01, n_epochs: int = 400, interval: int = 50):
     for i in range(n_epochs): 
         batch = generator.generate_batch(train_data)
         batch_input, batch_output = batch[:, :2], batch[:, 2:]
@@ -34,26 +34,33 @@ def train_params(wMat, aVec, nInput, nOutput, train_data, generator: DataGenerat
             print(f"Epoch {i + 1}, Loss: {loss_value}")
     return wMat, loss_value
 
+def get_reward(pop, test_data, nInput=2, nOutput=2): 
+    reward = []
+    for ind in pop: 
+        loss = loss_fn(ind.wMat, ind.aVec, nInput, nOutput, test_data[:,:2], test_data[:,2])
+        reward_value = 1 - loss.item()
+        reward.append(reward_value)
+    return reward
 
-# Deprecated loss_fn with cross entropy -- does not work well in this case 
+def backprop_per_species(neat, train_data, test_data, generator: DataGenerator, n_top_seed=8, learning_rate=0.01, n_epochs=400, nInput=2, nOutput=2):
+    """ 
+    For each species, do backprop on the best individual therein, and output the best individual
+    """
 
-# def cross_entropy_loss(logits, labels):
-#     """
-#     Args:
-#         logits: raw output from act function [batch_size, n_classes]
-#         labels: true labels [batch_size] or one-hot [batch_size, n_classes]
-#     """
-#     # Apply log_softmax to get log-probabilities
-#     log_probs = log_softmax(logits)
+    top_species = sorted(neat.species, key=lambda x: x.seed.fitness, reverse=True)[:n_top_seed]
+
+    top_individuals = []
+    for s in top_species: 
+        seed = s.bestInd
+        wMat = jnp.copy(seed.wMat)
+        aVec = jnp.array(seed.aVec)
+        wMat, _ = train_params(wMat, aVec, nInput, nOutput, train_data, generator, learning_rate=learning_rate, n_epochs=n_epochs, interval=50)
+
+        reward_value = get_reward([seed], test_data, nInput, nOutput)
+        seed.fitness = reward_value[0]
+        seed = update_conn(seed, wMat)
+        top_individuals.append(seed)
+
+    best_ind = sorted(top_individuals, key=lambda x: x.fitness, reverse=True)[0]
     
-#     # If labels are not one-hot, convert to one-hot
-#     if labels.ndim == 1:
-#         labels = jnp.eye(logits.shape[1])[labels]
-    
-#     # Compute cross entropy loss
-#     loss = -jnp.sum(labels * log_probs) / labels.shape[0]
-#     return loss
-
-# def loss_fn(weights, aVec, nInput, nOutput, inputs, targets):
-#     logits = act(weights, aVec, nInput, nOutput, inputs)
-#     return cross_entropy_loss(logits, targets)
+    return best_ind 

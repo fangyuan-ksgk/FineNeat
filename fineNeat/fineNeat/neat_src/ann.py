@@ -126,6 +126,18 @@ def getNodeInfo(nodeG, connG):
     return nodemap, seq_node_indices, wMat
 
 
+def update_conn(ind, wMat): 
+    node_map, _, _ = getNodeInfo(ind.node, ind.conn)
+    conn = np.copy(ind.conn)
+
+    for i in range(conn.shape[1]): 
+        node_start, node_end = conn[1,i], conn[2,i]
+        order_in, order_out = node_map[node_start][1], node_map[node_end][1]
+        conn[3,i] = wMat[order_in, order_out].item()
+
+    ind.conn = conn
+    return ind 
+
 # -- ANN Activation ------------------------------------------------------ -- #
 
 def act(weights, aVec, nInput, nOutput, inPattern):
