@@ -51,21 +51,19 @@ def getMatOrder(nIns, nOuts, wMat):
   
 def calwMat(node, conn): 
     conn[3,conn[4,:]==0] = np.nan
-    src  = conn[1,:].astype(int)
-    dest = conn[2,:].astype(int)
+    src_node  = conn[1,:].astype(int)
+    dest_node = conn[2,:].astype(int)
 
-    # wMat having order: input, bias, hidden, output -- important for propagation
     seq2node = np.r_[node[0, node[1,:]==1], node[0, node[1,:]==4], node[0, node[1,:]==3], node[0, node[1,:]==2]]
     seq2node = seq2node.astype(int)
+    node2seq = {node_idx: seq_idx for seq_idx, node_idx in enumerate(seq2node)}
 
-    src_mask = (src.reshape(-1, 1) == seq2node.reshape(1, -1)) # (n_conn, n_node)
-    dest_mask = (dest.reshape(-1, 1) == seq2node.reshape(1, -1))
-    src = (src_mask @ np.arange(len(seq2node)).reshape(-1, 1)).flatten()  # Convert to 1D
-    dest = (dest_mask @ np.arange(len(seq2node)).reshape(-1, 1)).flatten()  # Convert to 1D
+    src_seq = [node2seq[node_idx] for node_idx in src_node]
+    dest_seq = [node2seq[node_idx] for node_idx in dest_node]
 
     # Create weight matrix according to reordered nodes
     wMat = np.zeros((np.shape(node)[1],np.shape(node)[1]))
-    wMat[src,dest] = conn[3,:] # assign weight to the connection
+    wMat[src_seq,dest_seq] = conn[3,:] # assign weight to the connection
     
     return wMat, seq2node
 

@@ -121,7 +121,7 @@ class Neat():
     self.pop = pop
     self.innov = innov
     
-  def initPop_with_shapes(self, shapes):
+  def initPop_from_shapes(self, shapes):
     """Initialize population with a list of random individuals
     """
     p = self.p 

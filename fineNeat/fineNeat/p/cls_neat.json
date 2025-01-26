@@ -8,8 +8,8 @@
     "prob_addConn": 0.3,
     "prob_mutTurnConn": 0.2,
     "sparsity_ratio": 0.5,
-    "cap_conn": 30,
+    "cap_conn": 300,
     "cap_layer": 4,
-    "desired_conn": 30,
+    "desired_conn": 200,
     "stage_one_gen": 16
 }

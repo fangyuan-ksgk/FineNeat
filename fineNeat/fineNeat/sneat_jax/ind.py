@@ -4,7 +4,7 @@ import json
 from .ann import obtainOutgoingConnections, getNodeInfo
 import jax
 
-def initIndiv(shapes, seed=0): 
+def initIndiv(shapes, seed=0, act_id=9): 
   
     nodes = [shapes[0][0]] + [s[0] for s in shapes[1:]] + [shapes[-1][-1]]
     nInput = nodes[0]
@@ -22,7 +22,7 @@ def initIndiv(shapes, seed=0):
     node = node.at[1, nInput+nBias:nInput+nBias+nHidden].set(3)
     node = node.at[1, -nOutput:].set(2)
 
-    node = node.at[2, :].set(9)  # relu activation pattern 
+    node = node.at[2, :].set(act_id)  # relu activation pattern 
 
     nWeight = sum([s[0]*s[1] for s in shapes])
     nAddBias = nHidden + nOutput
@@ -128,8 +128,8 @@ class Ind():
     self.gen = 0
     
   @classmethod 
-  def from_shapes(cls, shapes): 
-    node, conn = initIndiv(shapes)
+  def from_shapes(cls, shapes, act_id=9): 
+    node, conn = initIndiv(shapes, act_id=act_id)
     return cls(conn, node)
 
   def to_params(self):  
@@ -322,7 +322,7 @@ class Ind():
     
     # Create array of 1s and 0s based on sparsity ratio
     key = jax.random.PRNGKey(seed + 1)
-    new_states = jax.random.bernoulli(key, p=p['sparsity_ratio'], shape=(n_change,))
+    new_states = jax.random.bernoulli(key, p=float(p['sparsity_ratio']), shape=(n_change,))
 
     # Update selected connections
     update_indices = jnp.arange(connG.shape[1])[non_essential_conn_ids][change_indices]

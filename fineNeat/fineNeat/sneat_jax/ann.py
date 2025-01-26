@@ -80,6 +80,10 @@ def calwMat(node, conn):
     return wMat, seq2node
   
   
+def getwMat(node, conn): 
+    wMat, _ = calwMat(node, conn)
+    return wMat
+  
   
 def getMat(nodeG, connG): 
     """ 
@@ -96,7 +100,10 @@ def getMat(nodeG, connG):
     
     if order2seq is False:
         return False, False, False, False
-    
+      
+    wMat = wMat[order2seq, :][:, order2seq]
+    order2seq = jnp.arange(len(order2seq))
+  
     seq2order = {int(order2seq[int(seq_idx)]): int(seq_idx) for seq_idx in order2seq}
     node2seq = {int(node_id): int(seq_idx) for node_id, seq_idx in zip(seq2node, jnp.arange(len(seq2node)))}
     seq2node = {int(node2seq[int(node_id)]): int(node_id) for node_id in node2seq}

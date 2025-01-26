@@ -130,7 +130,7 @@ def viewInd(ind, figsize=(10, 10)):
     # Create Graph
     nIn = ind.nInput + ind.nBias # fixed 
     nOut= ind.nOutput
-    node_map, seq_node_indices, wMat = getNodeInfo(ind.node, ind.conn)
+    node_map, seq_node_indices, wMat = getNodeInfo(np.array(ind.node), np.array(ind.conn))
     layer = np.array([node_map[node_idx][0] for node_idx in seq_node_indices])
 
     seq2node = {seq_idx: node_idx for seq_idx, node_idx in enumerate(seq_node_indices)}
