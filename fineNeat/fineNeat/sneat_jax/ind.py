@@ -194,7 +194,7 @@ class Ind():
     innov_orig = jnp.copy(innov) if innov is not None else None
     
     # - Change connection status (Turn On/Off)
-    connG, nodeG, innov = self.mutSparsity(p, innov, seed=seed)
+    # connG, nodeG, innov = self.mutSparsity(p, innov, seed=seed)
     
     # - Change activation function
     act_ids = random.choices([1,3,4,5,6,7,8,9,10,11], k=nodeG.shape[1])

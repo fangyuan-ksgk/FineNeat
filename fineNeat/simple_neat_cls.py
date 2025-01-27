@@ -12,7 +12,7 @@ import os
 
 
 choice_id = 0
-generator = DataGenerator(train_size=2000, batch_size=1000)
+generator = DataGenerator(train_size=20000, batch_size=10000)
 train_data, test_data = generator.generate_random_dataset(choice=choice_id)  # 0 for circle dataset
 
 
@@ -40,7 +40,7 @@ def train_best_species(neat, test_data, train_data, generator, iter, nInput=2, n
     for best_ind in best_inds:
         min_loss = 1e10
         for _ in range(3): 
-            _best_ind, loss_val = train_ind(best_ind, train_data, generator, learning_rate=0.01, n_epochs=800, interval=50, nInput=2, nOutput=2)
+            _best_ind, loss_val = train_ind(best_ind, train_data, generator, learning_rate=0.005, n_epochs=2400, interval=50, nInput=2, nOutput=2)
             if loss_val < min_loss: 
                 min_loss = loss_val
                 best_trained_ind = _best_ind
