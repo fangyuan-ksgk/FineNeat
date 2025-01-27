@@ -3,6 +3,7 @@ import copy
 import json
 from .ann import obtainOutgoingConnections, getNodeInfo
 import jax
+import random
 
 def initIndiv(shapes, seed=0, act_id=9): 
   
@@ -194,6 +195,10 @@ class Ind():
     
     # - Change connection status (Turn On/Off)
     connG, nodeG, innov = self.mutSparsity(p, innov, seed=seed)
+    
+    # - Change activation function
+    act_ids = random.choices([1,3,4,5,6,7,8,9,10,11], k=nodeG.shape[1])
+    nodeG = nodeG.at[2,:].set(act_ids)
          
     # - Weight mutation
     key = jax.random.PRNGKey(seed)

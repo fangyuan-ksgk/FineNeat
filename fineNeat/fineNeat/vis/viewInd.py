@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 import io
 from PIL import Image
 
-def visualize_dag(wMat, seq2order, seq2node, seq2layer, nIns, nOuts, figsize=(10, 10)):
+def visualize_dag(wMat, seq2order, seq2node, seq2layer, nIns, nOuts, nodeG, figsize=(10, 10)):
     """
     Visualize neural network as a DAG using networkx
     
@@ -117,7 +117,21 @@ def visualize_dag(wMat, seq2order, seq2node, seq2layer, nIns, nOuts, figsize=(10
             arrowsize=8)
     
     # Add labels
-    labels = {node: f"{seq2node[node]}" for node in G.nodes()}
+    act_map = {1: 'linear', 2: 'step', 3: 'sin', 4: 'gaussian', 5: 'tanh', 
+               6: 'sigmoid', 7: 'inverse', 8: 'abs', 9: 'relu', 10: 'cos', 11: 'squared'}
+    labels = {}
+    for node in G.nodes(): 
+        if node < nIns or node >= nodeG.shape[1]-nOuts: 
+            labels[node] = f"{seq2node[node]}"
+        else: 
+            try: 
+                act_id = nodeG[2, nodeG[1,:]==seq2node[node]]
+                labels[node] = f"{act_map[act_id]}"
+            except: 
+                labels[node] = f"{seq2node[node]}"
+    
+    # labels = {node: f"{seq2node[node]}" for node in G.nodes()}
+
     nx.draw_networkx_labels(G, pos, labels)
     
     plt.title("Neural Network DAG Visualization")
@@ -140,7 +154,8 @@ def viewInd(ind, figsize=(10, 10)):
     order2seq = {seq2order[seq_idx]: seq_idx for seq_idx in range(len(seq2order))}
     order2layer = {order_idx: seq2layer[order2seq[order_idx]] for order_idx in range(len(order2seq))}
     
-    return visualize_dag(wMat, seq2order, seq2node, seq2layer, nIn, nOut, figsize=figsize)
+    nodeG = np.array(ind.node)
+    return visualize_dag(wMat, seq2order, seq2node, seq2layer, nIn, nOut, nodeG, figsize=figsize)
 
 def cLinspace(start,end,N):
   if N == 1:

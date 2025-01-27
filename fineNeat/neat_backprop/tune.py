@@ -3,7 +3,7 @@ import jax.numpy as jnp
 from fineNeat.sneat_jax.ann import act, getMat, getNodeInfo
 from jax import value_and_grad
 from jax.nn import softmax
-from datagen import DataGenerator 
+from .datagen import DataGenerator 
 # from fineNeat import update_conn
 
 def one_hot_encode(batch_output):
@@ -29,28 +29,30 @@ def step_conn_weight(conn_weight, wMat, aVec, nInput, nOutput, src_seqs, dest_se
     conn_weight_updated = conn_weight - learning_rate * grads
     return conn_weight_updated, loss_value
 
+from tqdm import tqdm 
 
 def train_ind(ind, train_data, generator: DataGenerator, learning_rate=0.01, n_epochs=400, interval=50, nInput=2, nOutput=2):
-    wMat, node2order, node2seq, seq2node = getMat(ind.node, ind.conn)
+    wMat, node2order, node2seq, seq2node = getMat(jnp.array(ind.node), jnp.array(ind.conn))
     src_nodes, dest_nodes = ind.conn[1,:].astype(int), ind.conn[2,:].astype(int)
     src_seqs = [node2seq[src_node.item()] for src_node in src_nodes]
     dest_seqs = [node2seq[dest_node.item()] for dest_node in dest_nodes]
     aVec = jnp.array(ind.aVec)
     
-    for i in range(n_epochs): 
+    pbar = tqdm(range(n_epochs), total=n_epochs, desc="Training")
+    for i in pbar: 
         batch = generator.generate_batch(train_data)
         batch_input, batch_output = batch[:, :2], batch[:, 2:]
         conn_weight, loss_value = step_conn_weight(ind.conn[3,:], wMat, aVec, nInput, nOutput, src_seqs, dest_seqs, batch_input, batch_output, learning_rate=learning_rate)
         ind = update_ind(ind, conn_weight)
         if i % interval == 0:
-            print(f"Epoch {i + 1}, Loss: {loss_value}")
+            pbar.set_description(f"Training (Loss: {loss_value:.4f})")
             
     ind = update_ind(ind, conn_weight)
     return ind, loss_value
         
 
 def update_ind(ind, conn_weight): 
-    ind.conn = ind.conn.at[3,:].set(conn_weight)
+    ind.conn = jnp.array(ind.conn).at[3,:].set(conn_weight)
     ind.express()
     return ind 
 

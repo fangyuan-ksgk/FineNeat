@@ -1,48 +1,8 @@
 from fineNeat import loadHyp, updateHyp, load_cls_task
 from fineNeat.sneat_jax.ind import Ind 
-from datagen import DataGenerator
-from tune import get_reward
-from neat_backprop.tune import train_ind 
+from neat_backprop.datagen import DataGenerator
+from neat_backprop.tune import train_ind, get_reward
 from typing import Optional, List, Tuple
-
-choice_id = 0
-generator = DataGenerator(train_size=2000, batch_size=1000)
-train_data, test_data = generator.generate_random_dataset(choice=choice_id)  # 0 for circle dataset
-
-
-hyp_default = '../fineNeat/fineNeat/p/cls.json'
-hyp_adjust = '../fineNeat/fineNeat/p/cls_neat.json'
-fileName = "cls"
-
-hyp = loadHyp(pFileName=hyp_default, load_task=load_cls_task)
-updateHyp(hyp,load_cls_task,hyp_adjust)
-
-
-best_ind = None 
-best_reward = 0.0
-
-learning_rate = 0.01
-n_epochs = 800
-n_top_seed = 4
-nInput, nOutput = 2, 2
-
-
-# Stage 2. BackProp on top 4 individuals
-def backprop_top_inds(top_inds: List[Ind], learning_rate: float, n_epochs: int, interval: int=50, nInput: int=2, nOutput: int=2):
-    best_reward = 0.0 
-    best_ind = None 
-    
-    for ind in top_inds: 
-        new_ind = train_ind(ind, train_data, generator, learning_rate=learning_rate, n_epochs=n_epochs, interval=interval, nInput=nInput, nOutput=nOutput)[0]
-        reward_value = get_reward([new_ind], test_data, nInput, nOutput)
-        new_ind.fitness = reward_value[0]
-        if new_ind.fitness > best_reward: 
-            best_reward = new_ind.fitness
-            best_ind = new_ind 
-
-    return best_ind 
-
-
 import os 
 from tqdm import tqdm 
 from jax import numpy as jnp 
@@ -51,10 +11,39 @@ from fineNeat import viewInd, fig2img
 import matplotlib.pyplot as plt 
 from neat_backprop.viz import plot_decision_boundary
 import argparse
-
+import random
 
 
 def main(args):
+    
+    choice_id = args.taskid
+    generator = DataGenerator(train_size=2000, batch_size=1000)
+    train_data, test_data = generator.generate_random_dataset(choice=choice_id)  # 0 for circle dataset
+
+    hyp_default = '../fineNeat/fineNeat/p/cls.json'
+    hyp_adjust = '../fineNeat/fineNeat/p/cls_neat.json'
+
+    hyp = loadHyp(pFileName=hyp_default, load_task=load_cls_task)
+    updateHyp(hyp,load_cls_task,hyp_adjust)
+
+    best_ind = None 
+    learning_rate = 0.01
+    n_epochs = 800
+    nInput, nOutput = 2, 2
+
+    def backprop_top_inds(top_inds: List[Ind], learning_rate: float, n_epochs: int, interval: int=50, nInput: int=2, nOutput: int=2):
+        best_reward = 0.0 
+        best_ind = None 
+        
+        for ind in top_inds: 
+            new_ind = train_ind(ind, train_data, generator, learning_rate=learning_rate, n_epochs=n_epochs, interval=interval, nInput=nInput, nOutput=nOutput)[0]
+            reward_value = get_reward([new_ind], test_data, nInput, nOutput)
+            new_ind.fitness = reward_value[0]
+            if new_ind.fitness > best_reward: 
+                best_reward = new_ind.fitness
+                best_ind = new_ind 
+
+        return best_ind 
 
     # Create directories
     logdir = args.logdir
@@ -65,12 +54,14 @@ def main(args):
     # Initialize Population from Base Shape
     init_shape = [(2, 5), (5, 2)]
     population = [Ind.from_shapes(init_shape) for _ in range(args.population_size)]
+    for ind in population: 
+        ind.express()
 
     # Initialize Winning Streak
     winning_streak = [0] * args.population_size
 
     for tournament in tqdm(range(1, args.total_tournaments+1)):
-        left_idx, right_idx = jnp.random.choice(args.population_size, 2, replace=False, key=jnp.random.PRNGKey(tournament))
+        left_idx, right_idx = random.sample(range(args.population_size), 2)
         left_ind, right_ind = population[left_idx], population[right_idx]
 
         # Evaluate the fitness of the two individuals   
@@ -113,9 +104,9 @@ def main(args):
             record = winning_streak[record_holder]
             print(f"tournament: {tournament}, best_winning_streak: {record}")
             
-    # BackProp on record holder individuals | 5 tries 
-    print(" :: Start BackProp on top 4 individuals ...")
-    best_inds = backprop_top_inds([population[record_holder]] * 5, learning_rate, n_epochs, interval=50, nInput=2, nOutput=2)
+    # BackProp on record holder individuals | 10 tries 
+    print(" :: Start BackProp on top individual for 10 times ...")
+    best_inds = backprop_top_inds([population[record_holder]] * 10, learning_rate, n_epochs, interval=50, nInput=2, nOutput=2)
     best_ind = max(best_inds, key=lambda x: x.fitness)
     
     # Save checkpoint and best individual image 
@@ -128,7 +119,6 @@ def main(args):
     
     # Plot decision boundary
     fig, ax = plot_decision_boundary(best_ind.wMat, best_ind.aVec, nInput, nOutput, test_data)
-    plt.close(fig)
     img = fig2img(fig)
     img.save(os.path.join(visdir, f"sneat_cls_backprop_best_decision_boundary.png"))
 
@@ -137,10 +127,11 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='SNEAT cls tuning script')
     parser.add_argument('--seed', type=int, default=612, help='Random seed')
     parser.add_argument('--population-size', type=int, default=128, help='Population size')
-    parser.add_argument('--total-tournaments', type=int, default=120000, help='Total number of tournaments')
+    parser.add_argument('--total-tournaments', type=int, default=10000, help='Total number of tournaments')
     parser.add_argument('--save-freq', type=int, default=1000, help='Save frequency')
     parser.add_argument('--hyp-default', type=str, default='fineNeat/p/default_sneat.json', help='Default hyperparameters file')
     parser.add_argument('--hyp-adjust', type=str, default='fineNeat/p/volley_sparse.json', help='Adjustment hyperparameters file')
     parser.add_argument('--logdir', type=str, default='../runs/sneat_cls_tune', help='Log directory')
+    parser.add_argument('--taskid', type=int, default=0, help='Task ID')
     args = parser.parse_args()
     main(args)

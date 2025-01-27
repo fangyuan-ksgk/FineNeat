@@ -1,15 +1,15 @@
 {
     "task":"cls",
-    "maxGen":16,
+    "maxGen":32,
     "prob_mutConn": 0.3,
     "ann_mutSigma": 0.1, 
     "ann_absWCap": 100.0,
     "prob_addNode": 0.5,
     "prob_addConn": 0.3,
     "prob_mutTurnConn": 0.2,
-    "sparsity_ratio": 0.5,
+    "sparsity_ratio": 1.0,
     "cap_conn": 300,
     "cap_layer": 4,
     "desired_conn": 200,
-    "stage_one_gen": 16
+    "stage_one_gen": 32
 }
