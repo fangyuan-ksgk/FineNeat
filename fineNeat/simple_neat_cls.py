@@ -30,27 +30,23 @@ os.makedirs(log_dir, exist_ok=True)
 os.makedirs(vis_dir, exist_ok=True)
 
 
-def train_best_species(neat, test_data, train_data, generator, iter, nInput=2, nOutput=2):
+def train_species(self, species): 
+    species = self.species 
+    spec_individuals = [spec.seed for spec in species]
+    from neat_backprop.tune import train_ind 
+    trained_individuals = []
+    for ind in spec_individuals: 
+        trained_ind, _ = train_ind(ind, train_data, generator, learning_rate=0.01, n_epochs=800, interval=50, nInput=2, nOutput=2)
+        trained_individuals.append(trained_ind)
+    for i in range(len(species)): 
+        self.species[i].seed = trained_individuals[i]
+        self.species[i].bestInd = trained_individuals[i]
+        self.species[i].members.append(trained_individuals[i])
+    self.pop += trained_individuals 
+    
 
-    best_species = sorted(neat.species, key=lambda x: x.bestFit, reverse=True)[:3]
-    best_inds = [spec.bestInd for spec in best_species]
-
-    # multiple training runs
-    best_trained = [] 
-    for best_ind in best_inds:
-        min_loss = 1e10
-        for _ in range(3): 
-            _best_ind, loss_val = train_ind(best_ind, train_data, generator, learning_rate=0.005, n_epochs=2400, interval=50, nInput=2, nOutput=2)
-            if loss_val < min_loss: 
-                min_loss = loss_val
-                best_trained_ind = _best_ind
-                
-        best_trained_ind.express()
-        best_trained_ind.fitness = get_reward([best_trained_ind], test_data, nInput=2, nOutput=2)[0]
-        best_trained.append(best_trained_ind)
-        
-    best_ind = sorted(best_trained, key=lambda x: x.fitness, reverse=True)[0]
-
+def print_best_individual(neat, iter): 
+    best_ind = sorted(neat.pop, key=lambda x: x.fitness, reverse=True)[0]
     print(":: Best Individual Fitness: ", best_ind.fitness)
 
     # Save best individual with iteration number
@@ -73,14 +69,14 @@ def train_best_species(neat, test_data, train_data, generator, iter, nInput=2, n
 neat = Neat(hyp)
 
 neat.initPop()
-for iter in range(512): 
+for iter in range(97): 
     pop = neat.ask()        
     reward = get_reward(pop, test_data, nInput=2, nOutput=2)
     print("Best reward: ", max(reward))
     neat.tell(reward)
     
-    if iter % 16 == 0: 
-        # pick best species and train them
-        train_best_species(neat, test_data, train_data, generator, iter)
+    if iter > 0 and iter % 3 == 0: 
+        train_species(neat, neat.species)
+        print_best_individual(neat, iter)
 
 

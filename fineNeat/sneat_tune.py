@@ -134,7 +134,11 @@ def main(args):
     os.makedirs(visdir, exist_ok=True)
 
     game = games['slimevolleylite']
-    load_ind = Ind.load(args.checkpoint)  
+    if args.checkpoint != 'na': 
+        load_ind = Ind.load(args.checkpoint)  
+    else: 
+        load_ind = Ind.from_shapes([(game.input_size, game.output_size)])
+    
     population = [load_ind.safe_mutate(p=hyp) for _ in range(args.population_size)]
     print(":: Initialized Population with best sneat agent checkpoint")
 
@@ -208,7 +212,7 @@ if __name__ == "__main__":
     parser.add_argument('--hyp-default', type=str, default='fineNeat/p/default_sneat.json', help='Default hyperparameters file')
     parser.add_argument('--hyp-adjust', type=str, default='fineNeat/p/volley_sparse.json', help='Adjustment hyperparameters file')
     parser.add_argument('--logdir', type=str, default='../runs/sneat_tune_base', help='Log directory')
-    parser.add_argument('--checkpoint', type=str, default='../zoo/sneat_check/sneat_00360000_small.json', help='Checkpoint file to start from')
+    parser.add_argument('--checkpoint', type=str, default='na', help='Checkpoint file to start from')
     parser.add_argument("--selfplay", action="store_true", help="Use selfplay")
     parser.add_argument("--period", type=int, default=1000, help="Period for picking a new villain")
     parser.add_argument("--topo-mut-freq", type=float, default=1/16, help="Frequency of topology mutation")

@@ -42,6 +42,9 @@ def speciate(self):
 
     if p['spec_thresh'] < p['spec_threshMin']: # not too small threshold, otherwise species are the same
       p['spec_thresh'] = p['spec_threshMin']
+      
+    print(" :: Number of species: ", len(species))
+    print(" :: - Adjust spec_thresh to ", p['spec_thresh'])
 
     species, pop = self.assignSpecies  (pop, p)
     species      = self.assignOffspring(species, pop, p)

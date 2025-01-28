@@ -24,7 +24,7 @@ hyp = loadHyp(pFileName=hyp_default, load_task=load_cls_task)
 updateHyp(hyp,load_cls_task,hyp_adjust)
 
 # save best ind 
-log_dir = "../runs/simple_cls"
+log_dir = "../runs/simple_cls_v7_randomize"
 vis_dir = os.path.join(log_dir, "vis")
 os.makedirs(log_dir, exist_ok=True)
 os.makedirs(vis_dir, exist_ok=True)
@@ -35,7 +35,7 @@ nOutput = 2
 ind = Ind.from_shapes([(nInput,nOutput)], act_id=9)
 ind.express()
 
-pop_size = 256
+pop_size = 64
 
 from neat_backprop.simpop import SimplePop
 # Initialize Population 
@@ -46,7 +46,16 @@ for iter in range(120):
     reward = get_reward(pop.population, test_data, nInput=2, nOutput=2)
     top_k = pop.tell_pop(reward, k=9)
     top_k = pop.train_n_pick(top_k, k=3)
-    pop.update_pop(top_k, power = (iter+1)//2)
+    
+
+    # - Refresh population if current best is not good enough --> we want to leave space for better topologies 
+    # - Randomize weights when we want to eliminate effect of trained-weight dominating population
+    
+    schedule = 3
+    randomize_weights = True if (iter>0 and iter % schedule == 0) else False # scheduled randomization of weights
+    refresh_pop = True if (pop.best_fitness >= 0.1 and randomize_weights) else False # shceduled population refresh (killed dominating individuals below desired threshold)
+    
+    pop.update_pop(top_k, power = 1, randomize_weights=randomize_weights, refresh_pop=refresh_pop)
     
     # Save best individual with iteration number
     best_ind = top_k[0]
